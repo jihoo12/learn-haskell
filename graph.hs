@@ -17,6 +17,13 @@ myobject = Object 4 "object4" [1,2,3,4]
 mygraph :: Graph
 mygraph = Graph [myobject1,myobject2,myobject3,myobject]
 
+findByValue :: Value -> Graph -> [Object]
+findByValue targetVal (Graph objects) = 
+    filter (\(Object _ val _) -> val == targetVal) objects -- pattern matching 
+
 main :: IO ()
-main = print mygraph
+main = do
+    let result = findByValue "object2" mygraph
+    print result
+    
 
