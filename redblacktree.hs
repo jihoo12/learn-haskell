@@ -20,11 +20,71 @@ noDoubleRed (Tree True _ left right) =
 noDoubleRed (Tree False _ left right) = 
     noDoubleRed left && noDoubleRed right
 
+checkBlackHeight :: Tree -> Maybe Int
+checkBlackHeight Nil = Just 1  -- Nil 자체도 검은색 노드이므로 1을 반환 (혹은 0부터 시작해도 상관없습니다)
+checkBlackHeight (Tree color _ left right) =
+    case (checkBlackHeight left, checkBlackHeight right) of
+        (Just leftCount, Just rightCount) ->
+            -- 왼쪽 경로들과 오른쪽 경로들의 검은색 노드 개수가 같은지 확인
+            if leftCount == rightCount
+                then if color == False 
+                        then Just (leftCount + 1) -- 현재 노드가 검은색이면 +1
+                        else Just leftCount       -- 현재 노드가 빨간색이면 그대로
+                else Nothing -- 왼쪽과 오른쪽의 검은색 노드 개수가 다르면 규칙 위반!
+        _ -> Nothing -- 하위 트리 중 하나라도 이미 규칙을 위반했다면 Nothing
+
 -- 보조 함수: 노드가 검은색(또는 Nil)인지 확인
 isBlack :: Tree -> Bool
 isBlack Nil = True
 isBlack (Tree color _ _ _) = color == False
 
--- 1~4번 규칙 종합 검사 (1번은 타입 시스템이 보장, 3번은 Nil에 색상이 없으므로 항상 만족)
-checkRB :: Tree -> Bool
-checkRB t = isRootBlack t && noDoubleRed t
+-----------------------------------------------------------------------------------
+
+isValidRedBlackTree :: Tree -> Bool
+isValidRedBlackTree t = isRootBlack t && noDoubleRed t && isJust (checkBlackHeight t)
+  where
+    isJust (Just _) = True
+    isJust Nothing  = False
+
+validTree :: Tree
+validTree = 
+    Tree False 13
+        (Tree True 8
+            (Tree False 1 Nil Nil)
+            (Tree False 11 Nil Nil)
+        )
+        (Tree True 17
+            (Tree False 15 Nil Nil)
+            (Tree False 25 Nil Nil)
+        )
+
+badRootTree :: Tree
+badRootTree = Tree True 10 Nil Nil
+
+-- 실패 케이스 2: 10(Red) 아래에 5(Red)가 연속으로 붙어서 에러가 나야 함
+doubleRedTree :: Tree
+doubleRedTree = 
+    Tree False 20
+        (Tree True 10
+            (Tree True 5 Nil Nil)  -- Red 연속 발생!
+            Nil
+        )
+        Nil
+
+-- 실패 케이스 3: 왼쪽 경로는 검은 노드가 2개인데, 오른쪽 경로는 3개라서 에러가 나야 함
+badHeightTree :: Tree
+badHeightTree = 
+    Tree False 20
+        (Tree False 10 Nil Nil) -- 왼쪽 자식 (Black)
+        (Tree False 30          -- 오른쪽 자식 (Black)
+            (Tree False 25 Nil Nil) -- 오른쪽의 왼쪽 자식 (Black) -> 이 때문에 오른쪽 경로가 더 깊어짐
+            Nil
+        )
+
+main :: IO ()
+main = do
+    print (isValidRedBlackTree validTree)
+    print (isValidRedBlackTree badRootTree)
+    print (isValidRedBlackTree doubleRedTree)
+    print (isValidRedBlackTree badHeightTree)
+
